@@ -47,6 +47,8 @@ public:
   // Tetromino I("I", 4, 2D Bool Array)
   Tetromino(std::string, int, bool[MAX_SIZE][MAX_SIZE]);
 
+  Tetromino();
+
   // 이름을 반환한다.
   std::string name() { return name_; }
 

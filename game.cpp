@@ -1,6 +1,7 @@
 #include "game.h"
 #include "console/console.h"
-#include "declared.h"
+#include "utils.h"
+#include <string>
 
 Game::Game() {
 
@@ -20,7 +21,8 @@ void Game::update1Second() {
 
 void Game::draw() {
   this->drawUI();
-
+  Tetromino mino = Tetromino("I", 4, "XXXXOOOOXXXXXXXX");
+  this->head = new TetrominoMapper(nullptr, mino);
 }
 
 void Game::drawUI() {
@@ -36,6 +38,9 @@ void Game::drawUI() {
   console::draw(19, 0, "Hold");
 }
 
+void Game::drawTetrominos() {
+  
+}
 
 bool Game::shouldExit() {
   return false;

@@ -18,6 +18,8 @@ Tetromino::Tetromino(std::string name, int size, bool shape[MAX_SIZE][MAX_SIZE])
   this->original_ = this;
 }
 
+Tetromino::Tetromino() {}
+
 Tetromino Tetromino::rotatedCW() {
   bool shape[MAX_SIZE][MAX_SIZE];
   int size = this->size_;
