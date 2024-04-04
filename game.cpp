@@ -1,10 +1,12 @@
 #include "game.h"
 #include "console/console.h"
 #include "utils.h"
+#include "tetromino.h"
 #include <string>
 
 Game::Game() {
-
+  // Tetromino test("T", 3, "XOXOOOXXX");
+  // this->tetrominos[this->tetrominoSize++] = test.rotatedCCW();
 }
 
 void Game::update() {
@@ -16,13 +18,20 @@ void Game::update() {
 }
 
 void Game::update1Second() {
-  
+  if (this->currentMino == NULL) {
+    int rd = getRandomTetrominoIndex();
+    this->currentMino = new Tetromino(
+      TETROMINO_NAME[rd],
+      TETROMINO_SIZE[rd],
+      TETROMINO_SHAPE[rd]
+    );
+    this->tetrominos[this->tetrominoSize++] = this->currentMino;
+  }
 }
 
 void Game::draw() {
   this->drawUI();
-  Tetromino mino = Tetromino("I", 4, "XXXXOOOOXXXXXXXX");
-  this->head = new TetrominoMapper(nullptr, mino);
+  this->drawTetrominos();
 }
 
 void Game::drawUI() {
@@ -39,7 +48,10 @@ void Game::drawUI() {
 }
 
 void Game::drawTetrominos() {
-  
+  // Draw Tetrominos
+  for (int i = 0; i < this->tetrominoSize; ++i) {
+    this->tetrominos[i]->drawAt(BLOCK_STRING, 1, 1);
+  }
 }
 
 bool Game::shouldExit() {
