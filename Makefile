@@ -7,8 +7,8 @@ endif
 
 all: main
 
-main: main.o game.o tetromino.o console.o
-	$(CC) $(FLAGS) -o main main.o game.o tetromino.o console.o
+main: main.o game.o tetromino.o console.o utils.o
+	$(CC) $(FLAGS) -o main main.o game.o tetromino.o console.o utils.o
 
 console.o: console/console.cpp console/console.h
 	$(CC) $(FLAGS) -c -o console.o console/console.cpp
@@ -21,6 +21,9 @@ game.o: game.cpp game.h tetromino.h
 
 tetromino.o: tetromino.cpp tetromino.h
 	$(CC) $(FLAGS) -c -o tetromino.o tetromino.cpp
+
+utils.o: utils.cpp utils.h
+	$(CC) $(FLAGS) -c -o utils.o utils.cpp
 
 clean:
 	rm -f *.o main.exe main

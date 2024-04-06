@@ -30,22 +30,20 @@ Tetromino Tetromino::rotatedCW() {
       }
   }
 
-  Tetromino rotated(this->name_, this->size_, temp);
-  return rotated;
+  return Tetromino(this->name_, this->size_, temp);
 }
 
 Tetromino Tetromino::rotatedCCW() {
- bool shape[MAX_SIZE][MAX_SIZE];
+  bool temp[MAX_SIZE][MAX_SIZE];
   int size = this->size_;
 
   for (int i = 0; i < size; ++i) {
     for (int j = 0; j < size; ++j) {
-      shape[size - 1 - j][i] = this->shape_[i][j];
+      temp[size - 1 - j][i] = this->shape_[i][j];
     }
   }
 
-  Tetromino rotated(this->name_, this->size_, shape);
-  return rotated;
+  return Tetromino(this->name_, this->size_, temp);
 }
 
 void Tetromino::drawAt(std::string s, int x, int y) {
