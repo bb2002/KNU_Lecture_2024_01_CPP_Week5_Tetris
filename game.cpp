@@ -24,16 +24,16 @@ void Game::update() {
 }
 
 void Game::updateSlowly() {
+  if (this->nextMino == NULL) {
+    this->nextMino = this->spawnTetromino(13, 1);
+  }
+
   if (this->currentMino == NULL) {
     this->currentMino = this->nextMino;
     this->nextMino = NULL;
     this->currentMino->x = 5;
     this->currentMino->y = 1;
     this->tetrominos[this->tetrominoSize++] = this->currentMino;
-  }
-
-  if (this->nextMino == NULL) {
-    this->nextMino = this->spawnTetromino(13, 1);
   }
 }
 
@@ -56,14 +56,33 @@ void Game::drawUI() {
 }
 
 void Game::drawTetrominos() {
+  if (this->nextMino != NULL) {
+    this->nextMino->mino.drawAt(BLOCK_STRING, this->nextMino->x, this->nextMino->y);
+  }
+
+  if (this->currentMino != NULL) {
+    this->currentMino->mino.drawAt(
+      SHADOW_STRING,
+      this->currentMino->x,
+      this->currentMino->y + this->findRemainingDownwardDistance(
+        this->currentMino->mino,
+        this->currentMino->x,
+        this->currentMino->y
+      )
+    );
+  }
+
+  if (this->holdMino != NULL) {
+    this->holdMino->mino.drawAt(
+      BLOCK_STRING,
+      20, 1
+    );
+  }
+
   // Draw Tetrominos
   for (int i = 0; i < this->tetrominoSize; ++i) {
     Tetromino2D* mino2D = this->tetrominos[i];
     mino2D->mino.drawAt(BLOCK_STRING, mino2D->x, mino2D->y);
-  }
-
-  if (this->nextMino != NULL) {
-    this->nextMino->mino.drawAt(BLOCK_STRING, this->nextMino->x, this->nextMino->y);
   }
 }
 
@@ -97,6 +116,7 @@ void Game::moveTetromino(int tick) {
 
   int x = 0;
   int y = 0;
+  int speed = 1;
   if (this->pressedKey == console::Key::K_LEFT) {
     x = -1;
   }
@@ -105,31 +125,85 @@ void Game::moveTetromino(int tick) {
     x = 1;
   }
 
-  if (this->pressedKey == console::Key::K_X) {
-    this->currentMino->mino = this->currentMino->mino.rotatedCW();
+  if (this->pressedKey == console::Key::K_SPACE && this->canUseHold) {
+    this->canUseHold = false;
+
+    if (this->holdMino == NULL) {
+      this->holdMino = this->currentMino;
+      this->holdMino->mino = *this->holdMino->mino.original();
+
+      this->currentMino = this->nextMino;
+      this->nextMino = NULL;
+
+      this->currentMino->x = this->holdMino->x;
+      this->currentMino->y = this->holdMino->y;
+    } else {
+      Tetromino2D* tmp = this->currentMino;
+      this->currentMino = this->holdMino;
+      this->currentMino->x = tmp->x;
+      this->currentMino->y = tmp->y;
+      this->holdMino = tmp;
+      this->holdMino->mino = *tmp->mino.original();
+    }
+
+    this->tetrominos[this->tetrominoSize - 1] = this->currentMino;
   }
+
+  if (this->pressedKey == console::Key::K_UP) {
+    // 하드 드롭
+    this->currentMino->y += this->findRemainingDownwardDistance(
+      this->currentMino->mino,
+      this->currentMino->x,
+      this->currentMino->y
+    );
+    this->currentMino = NULL;
+    this->canUseHold = true;
+  } else {
+    // 소프트 드롭
+    if (this->pressedKey == console::Key::K_X) {
+      Tetromino rotatedMino = this->currentMino->mino.rotatedCW();
+      
+      // 돌릴수 있는지 확인
+      CollisionType collisionType = this->collisionTester(rotatedMino, this->currentMino->x, this->currentMino->y, &this->currentMino->mino);
+      if (collisionType == CollisionType::NONE) {
+        this->currentMino->mino = rotatedMino;
+      }
+    }
 
     if (this->pressedKey == console::Key::K_Z) {
-    this->currentMino->mino = this->currentMino->mino.rotatedCCW();
-  }
+      Tetromino rotatedMino = this->currentMino->mino.rotatedCCW();
 
-  if (tick % DROP_DELAY == 0) {
-    y = 1;
-  }
+      // 돌릴수 있는지 확인
+      CollisionType collisionType = this->collisionTester(rotatedMino, this->currentMino->x, this->currentMino->y, &this->currentMino->mino);
+      if (collisionType == CollisionType::NONE) {
+        this->currentMino->mino = rotatedMino;
+      }
+    }
 
-  CollisionType collisionType = this->collisionTester(this->currentMino->mino, this->currentMino->x + x, this->currentMino->y + y);  
-  if (collisionType == CollisionType::NONE) {
-    this->currentMino->x += x;
-    this->currentMino->y += y;
-  }
+    if (this->pressedKey == console::Key::K_DOWN) {
+      speed = 10;
+    }
 
-  if (collisionType == CollisionType::OUT_OF_BOARD_Y) {
-    this->currentMino = NULL;
-  }
+    if ((tick % (int)std::round(DROP_DELAY / speed)) == 0) {
+      y = 1;
+    }
 
-  if (collisionType == CollisionType::CONFLICT_BLOCK) {
-    if (y == 1) {
+    CollisionType collisionType = this->collisionTester(this->currentMino->mino, this->currentMino->x + x, this->currentMino->y + y);  
+    if (collisionType == CollisionType::NONE) {
+      this->currentMino->x += x;
+      this->currentMino->y += y;
+    }
+
+    if (collisionType == CollisionType::OUT_OF_BOARD_Y) {
       this->currentMino = NULL;
+      this->canUseHold = true;
+    }
+
+    if (collisionType == CollisionType::CONFLICT_BLOCK) {
+      if (y == 1) {
+        this->currentMino = NULL;
+        this->canUseHold = true;
+      }
     }
   }
 
@@ -149,7 +223,7 @@ Tetromino2D* Game::spawnTetromino(int x, int y) {
   return newTetromino;
 }
 
-CollisionType Game::collisionTester(Tetromino& targetMino, int simulateX, int simulateY) {
+CollisionType Game::collisionTester(Tetromino& targetMino, int simulateX, int simulateY, Tetromino* excludeMino) {
   bool targetMinoArea[BOARD_WIDTH][BOARD_HEIGHT] = { { false, }, };
   for (int y = 0; y < targetMino.size(); ++y) {
     for (int x = 0; x < targetMino.size(); ++x ) {
@@ -174,7 +248,7 @@ CollisionType Game::collisionTester(Tetromino& targetMino, int simulateX, int si
     Tetromino2D* arrayedTetromino2D = this->tetrominos[i];
     Tetromino& arrayedMino = this->tetrominos[i]->mino;
 
-    if ((&arrayedMino) == (&targetMino)) {
+    if ((&arrayedMino) == (&targetMino) || (&arrayedMino) == excludeMino) {
       continue;
     }
 
@@ -193,6 +267,19 @@ CollisionType Game::collisionTester(Tetromino& targetMino, int simulateX, int si
   }
 
   return CollisionType::NONE;
+}
+
+int Game::findRemainingDownwardDistance(
+  Tetromino& mino, 
+  int simulateX, 
+  int simulateY
+) {
+  int y = 0;
+  while (this->collisionTester(this->currentMino->mino, this->currentMino->x, this->currentMino->y + (y + 1)) == CollisionType::NONE) {
+    ++y;
+  }
+
+  return y;
 }
 
 bool Game::shouldExit() {

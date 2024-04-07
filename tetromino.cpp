@@ -30,7 +30,9 @@ Tetromino Tetromino::rotatedCW() {
       }
   }
 
-  return Tetromino(this->name_, this->size_, temp);
+  Tetromino rotated(this->name_, this->size_, temp);
+  rotated.original_ = this->original();
+  return rotated;
 }
 
 Tetromino Tetromino::rotatedCCW() {
@@ -43,7 +45,9 @@ Tetromino Tetromino::rotatedCCW() {
     }
   }
 
-  return Tetromino(this->name_, this->size_, temp);
+  Tetromino rotated(this->name_, this->size_, temp);
+  rotated.original_ = this->original();
+  return rotated;
 }
 
 void Tetromino::drawAt(std::string s, int x, int y) {
