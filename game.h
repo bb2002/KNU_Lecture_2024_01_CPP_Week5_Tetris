@@ -2,6 +2,7 @@
 #ifndef GAME_H
 #define GAME_H
 
+#include <vector>
 #include <string>
 #include <ctime>
 #include <cmath>
@@ -12,7 +13,6 @@
 #define BOARD_WIDTH 10
 #define BOARD_HEIGHT 20
 #define LINES 40
-#define MAX_TETROMINO_SIZE 1000
 
 #define DROP_DELAY 60
 
@@ -26,8 +26,7 @@ private:
   int tick = 0;
 
   // 렌더링을 위한 테트로미노 배열
-  Tetromino2D* tetrominos[MAX_TETROMINO_SIZE];
-  int tetrominoSize = 0;
+  std::vector<Tetromino2D*> tetrominos;
 
   // 현재 추락중인 테트로미노
   Tetromino2D* currentMino = NULL;

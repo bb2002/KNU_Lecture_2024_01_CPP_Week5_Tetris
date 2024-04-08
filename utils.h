@@ -9,19 +9,15 @@
 #include <string>
 #include "tetromino.h"
 
-const std::string TETROMINO_NAME[] = { "I", "O", "T", "S", "Z", "J", "L" };
-
-const std::string TETROMINO_SHAPE[] = {
-  "XXXXOOOOXXXXXXXX",
-  "XXXXOOXOO",
-  "XXXXOXOOO",
-  "XOOOOXXXX",
-  "OOXXOOXXX",
-  "OXXOOOXXX",
-  "XXOOOOXXX"
+const Tetromino DECLARED_TETROMINOS[] = {
+  Tetromino("I", 4, "XXXXOOOOXXXXXXXX"),
+  Tetromino("O", 2, "OOOO"),
+  Tetromino("T", 3, "XOXOOOXXX"),
+  Tetromino("S", 3, "XOOOOXXXX"),
+  Tetromino("Z", 3, "OOXXOOXXX"),
+  Tetromino("J", 3, "OXXOOOXXX"),
+  Tetromino("L", 3, "XXOOOOXXX"),
 };
-
-const int TETROMINO_SIZE[] = { 4,3,3,3,3,3,3 };
 
 int getRandomTetrominoIndex();
 
