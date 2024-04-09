@@ -28,7 +28,9 @@ Tetromino Tetromino::rotatedCW() {
     }
   }
 
-  return Tetromino(this->name(), this->size(), serialized);
+  Tetromino rotated = Tetromino(this->name(), this->size(), serialized);
+  rotated.original_ = this;
+  return rotated;
 }
 
 Tetromino Tetromino::rotatedCCW() {
@@ -36,9 +38,9 @@ Tetromino Tetromino::rotatedCCW() {
 
   // 2차 배열을 반시계 방향으로 회전
   for (int i = 0; i < this->size_; ++i) {
-      for (int j = 0; j < this->size_; ++j) {
-          temp[this->size() - j - 1][i] = this->shape_[i][j];
-      }
+    for (int j = 0; j < this->size_; ++j) {
+      temp[this->size() - j - 1][i] = this->shape_[i][j];
+    }
   }
 
 
@@ -50,7 +52,9 @@ Tetromino Tetromino::rotatedCCW() {
     }
   }
 
-  return Tetromino(this->name(), this->size(), serialized);
+  Tetromino rotated = Tetromino(this->name(), this->size(), serialized);
+  rotated.original_ = this;
+  return rotated;
 }
 
 void Tetromino::drawAt(std::string s, int absoluteX, int absoluteY) {

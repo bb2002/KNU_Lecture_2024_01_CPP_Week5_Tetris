@@ -57,16 +57,15 @@ void Game::drawUI() {
 
 void Game::drawTetrominos() {
   if (this->nextMino != NULL) {
-    // 
-    this->nextMino->mino.drawAt(BLOCK_STRING, 13, 1);
+    this->nextMino->mino->drawAt(BLOCK_STRING, 13, 1);
   }
 
   if (this->currentMino != NULL) {
-    this->currentMino->mino.drawAt(
+    this->currentMino->mino->drawAt(
       SHADOW_STRING,
       this->currentMino->x,
       this->currentMino->y + this->findRemainingDownwardDistance(
-        this->currentMino->mino,
+        *this->currentMino->mino,
         this->currentMino->x,
         this->currentMino->y
       )
@@ -74,7 +73,7 @@ void Game::drawTetrominos() {
   }
 
   if (this->holdMino != NULL) {
-    this->holdMino->mino.drawAt(
+    this->holdMino->mino->drawAt(
       BLOCK_STRING,
       20, 1
     );
@@ -82,7 +81,7 @@ void Game::drawTetrominos() {
 
   // Draw Tetrominos
   for (Tetromino2D* item : this->tetrominos) {
-    item->mino.drawAt(BLOCK_STRING, item->x, item->y);
+    item->mino->drawAt(BLOCK_STRING, item->x, item->y);
   }
 }
 
@@ -129,15 +128,33 @@ void Game::moveTetromino(int tick) {
     this->canUseHold = false;
 
     // 렌더 배열에서 현재 미노를 제거
-    std::remove(this->tetrominos.begin(), this->tetrominos.end(), this->currentMino);
+    for (int i = 0; i < this->tetrominos.size(); ++i) {
+      if (this->currentMino == this->tetrominos[i]) {
+        this->tetrominos.erase(this->tetrominos.begin() + i);
+      }
+    }
 
     if (this->holdMino == NULL) {
       this->holdMino = this->currentMino;
-      this->holdMino->mino = *this->holdMino->mino.original();
 
+      // 스파게티 코드의 최후
+      // 이 주석을 보실지 모르겠으나, 회전한 도형을 current->mino에 할당하는 순간
+      // original 까지 돌아간 데이터로 덮어씌워지는 기히한 현상으로 인해
+      // (아마) copy  관련 문제 같음
+      // 이를 피하고자 돌릴때마다 새로운 테트리미노를 생성해서...
+      // 이런 이상한 코드가 나왔다고 합니다.
+      // 비록 메모리를 조금 쓰지만 잘 동작합니다
+      Tetromino* before = this->holdMino->mino->original();
+      while (true) {
+        if (before->original() == before) {
+          this->holdMino->mino = before;
+          break;
+        }
+
+        before = before->original();
+      }
       this->currentMino = this->nextMino;
       this->nextMino = NULL;
-
       this->currentMino->x = this->holdMino->x;
       this->currentMino->y = this->holdMino->y;
     } else {
@@ -146,16 +163,26 @@ void Game::moveTetromino(int tick) {
       this->currentMino->x = tmp->x;
       this->currentMino->y = tmp->y;
       this->holdMino = tmp;
-      this->holdMino->mino = *tmp->mino.original();
+      
+      Tetromino* before = this->holdMino->mino->original();
+      while (true) {
+        if (before->original() == before) {
+          this->holdMino->mino = before;
+          break;
+        }
+
+        before = before->original();
+      }
     }
 
-    // this->tetrominos.erase(this->currentMino);
+    // 렌더 배열에 다시 추가
+    this->tetrominos.push_back(this->currentMino);
   }
 
   if (this->pressedKey == console::Key::K_UP) {
     // 하드 드롭
     this->currentMino->y += this->findRemainingDownwardDistance(
-      this->currentMino->mino,
+      *this->currentMino->mino,
       this->currentMino->x,
       this->currentMino->y
     );
@@ -164,14 +191,16 @@ void Game::moveTetromino(int tick) {
   } else {
     // 소프트 드롭
     if (this->pressedKey == console::Key::K_X) {
-      Tetromino rotatedMino = this->currentMino->mino.rotatedCW();
-      
+      // original 도형까지 돌아가버리는 이상한 현상으로 인해
+      // 이상한 코드 탄생
+      Tetromino* rotatedMino = new Tetromino(this->currentMino->mino->rotatedCW());
+
       // 돌릴수 있는지 확인
       CollisionType collisionType = this->collisionTester(
-        rotatedMino, 
+        *rotatedMino, 
         this->currentMino->x, 
         this->currentMino->y, 
-        &this->currentMino->mino
+        this->currentMino->mino
       );
       if (collisionType == CollisionType::NONE) {
         this->currentMino->mino = rotatedMino;
@@ -179,14 +208,16 @@ void Game::moveTetromino(int tick) {
     }
 
     if (this->pressedKey == console::Key::K_Z) {
-      Tetromino rotatedMino = this->currentMino->mino.rotatedCCW();
+      // original 도형까지 돌아가버리는 이상한 현상으로 인해
+      // 이상한 코드 탄생
+      Tetromino* rotatedMino = new Tetromino(this->currentMino->mino->rotatedCCW());
 
       // 돌릴수 있는지 확인
       CollisionType collisionType = this->collisionTester(
-        rotatedMino, 
+        *rotatedMino, 
         this->currentMino->x, 
         this->currentMino->y, 
-        &this->currentMino->mino
+        this->currentMino->mino
       );
       if (collisionType == CollisionType::NONE) {
         this->currentMino->mino = rotatedMino;
@@ -201,7 +232,7 @@ void Game::moveTetromino(int tick) {
       y = 1;
     }
 
-    CollisionType collisionType = this->collisionTester(this->currentMino->mino, this->currentMino->x + x, this->currentMino->y + y);  
+    CollisionType collisionType = this->collisionTester(*this->currentMino->mino, this->currentMino->x + x, this->currentMino->y + y);  
     if (collisionType == CollisionType::NONE) {
       this->currentMino->x += x;
       this->currentMino->y += y;
@@ -225,9 +256,10 @@ void Game::moveTetromino(int tick) {
 
 Tetromino2D* Game::spawnTetromino(int x, int y) {
   int rd = getRandomTetrominoIndex();
+  Tetromino* newMino = new Tetromino(DECLARED_TETROMINOS[rd]);
 
   return new Tetromino2D {
-    DECLARED_TETROMINOS[rd],
+    newMino,
     x, y
   };
 }
@@ -255,15 +287,15 @@ CollisionType Game::collisionTester(Tetromino& targetMino, int simulateX, int si
   }
 
   for (Tetromino2D* item : this->tetrominos) {
-    Tetromino& itemMino = item->mino;
+    Tetromino* itemMino = item->mino;
 
-    if ((&itemMino) == (&targetMino) || (&itemMino) == (excludeMino)) {
+    if ((itemMino) == (&targetMino) || (itemMino) == (excludeMino)) {
       continue;
     }
 
-    for (int x = 0; x < itemMino.size(); ++x) {
-      for (int y = 0; y < itemMino.size(); ++y) {
-        if (itemMino.check(y, x)) {
+    for (int x = 0; x < itemMino->size(); ++x) {
+      for (int y = 0; y < itemMino->size(); ++y) {
+        if (itemMino->check(y, x)) {
           int absX = x + item->x;
           int absY = y + item->y;
           
@@ -284,7 +316,7 @@ int Game::findRemainingDownwardDistance(
   int simulateY
 ) {
   int y = 0;
-  while (this->collisionTester(this->currentMino->mino, this->currentMino->x, this->currentMino->y + (y + 1)) == CollisionType::NONE) {
+  while (this->collisionTester(*this->currentMino->mino, this->currentMino->x, this->currentMino->y + (y + 1)) == CollisionType::NONE) {
     ++y;
   }
 

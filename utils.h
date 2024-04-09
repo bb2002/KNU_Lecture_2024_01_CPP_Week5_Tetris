@@ -22,7 +22,7 @@ const Tetromino DECLARED_TETROMINOS[] = {
 int getRandomTetrominoIndex();
 
 struct Tetromino2D {
-  Tetromino mino;
+  Tetromino* mino;
   int x;
   int y;
 };
