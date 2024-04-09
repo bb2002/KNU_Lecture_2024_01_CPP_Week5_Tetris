@@ -7,18 +7,17 @@ Tetromino::Tetromino(std::string name, int size, std::string shape) : name_(name
       this->shape_[y][x] = shape[index++] == 'O';
     }
   }
-
   this->original_ = this;
 }
 
 Tetromino Tetromino::rotatedCW() {
-  bool temp[MAX_SIZE][MAX_SIZE]; // 임시 배열
+  bool temp[MAX_SIZE][MAX_SIZE] = { { false, }, }; // 임시 배열
 
   // 2차 배열을 시계 방향으로 회전
   for (int i = 0; i < this->size(); ++i) {
-    for (int j = 0; j < this->size(); ++j) {
-      temp[this->size() - 1 - j][i] = this->shape_[i][j];
-    }
+      for (int j = 0; j < this->size(); ++j) {
+          temp[j][this->size() - 1 - i] = this->shape_[i][j]; // temp의 [j][this->size() - 1 - i]로 수정
+      }
   }
 
   // 회전된 배열을 직렬화
@@ -33,14 +32,15 @@ Tetromino Tetromino::rotatedCW() {
 }
 
 Tetromino Tetromino::rotatedCCW() {
-  bool temp[MAX_SIZE][MAX_SIZE]; // 임시 배열
+  bool temp[MAX_SIZE][MAX_SIZE] = { {false, }, }; // 임시 배열
 
   // 2차 배열을 반시계 방향으로 회전
   for (int i = 0; i < this->size_; ++i) {
-    for (int j = 0; j < this->size_; ++j) {
-      temp[j][this->size() - i - 1] = this->shape_[i][j];
-    }
+      for (int j = 0; j < this->size_; ++j) {
+          temp[this->size() - j - 1][i] = this->shape_[i][j];
+      }
   }
+
 
   // 회전된 배열을 직렬화
   std::string serialized = "";

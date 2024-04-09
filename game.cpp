@@ -2,7 +2,7 @@
 
 Game::Game() {
   srand(1); 
-  this->currentMino = this->spawnTetromino(5,1);
+  this->currentMino = this->spawnTetromino(1,1);
   this->tetrominos.push_back(this->currentMino);
 
   // 다음 테트리미노와 현재 테트리미노를 동시에 초기화하면 
@@ -57,19 +57,20 @@ void Game::drawUI() {
 
 void Game::drawTetrominos() {
   if (this->nextMino != NULL) {
+    // 
     this->nextMino->mino.drawAt(BLOCK_STRING, 13, 1);
   }
 
   if (this->currentMino != NULL) {
-    // this->currentMino->mino.drawAt(
-    //   SHADOW_STRING,
-    //   this->currentMino->x,
-    //   this->currentMino->y + this->findRemainingDownwardDistance(
-    //     this->currentMino->mino,
-    //     this->currentMino->x,
-    //     this->currentMino->y
-    //   )
-    // );
+    this->currentMino->mino.drawAt(
+      SHADOW_STRING,
+      this->currentMino->x,
+      this->currentMino->y + this->findRemainingDownwardDistance(
+        this->currentMino->mino,
+        this->currentMino->x,
+        this->currentMino->y
+      )
+    );
   }
 
   if (this->holdMino != NULL) {
@@ -125,25 +126,28 @@ void Game::moveTetromino(int tick) {
   }
 
   if (this->pressedKey == console::Key::K_SPACE && this->canUseHold) {
-    // this->canUseHold = false;
+    this->canUseHold = false;
 
-    // if (this->holdMino == NULL) {
-    //   this->holdMino = this->currentMino;
-    //   this->holdMino->mino = *this->holdMino->mino.original();
+    // 렌더 배열에서 현재 미노를 제거
+    std::remove(this->tetrominos.begin(), this->tetrominos.end(), this->currentMino);
 
-    //   this->currentMino = this->nextMino;
-    //   this->nextMino = NULL;
+    if (this->holdMino == NULL) {
+      this->holdMino = this->currentMino;
+      this->holdMino->mino = *this->holdMino->mino.original();
 
-    //   this->currentMino->x = this->holdMino->x;
-    //   this->currentMino->y = this->holdMino->y;
-    // } else {
-    //   Tetromino2D* tmp = this->currentMino;
-    //   this->currentMino = this->holdMino;
-    //   this->currentMino->x = tmp->x;
-    //   this->currentMino->y = tmp->y;
-    //   this->holdMino = tmp;
-    //   this->holdMino->mino = *tmp->mino.original();
-    // }
+      this->currentMino = this->nextMino;
+      this->nextMino = NULL;
+
+      this->currentMino->x = this->holdMino->x;
+      this->currentMino->y = this->holdMino->y;
+    } else {
+      Tetromino2D* tmp = this->currentMino;
+      this->currentMino = this->holdMino;
+      this->currentMino->x = tmp->x;
+      this->currentMino->y = tmp->y;
+      this->holdMino = tmp;
+      this->holdMino->mino = *tmp->mino.original();
+    }
 
     // this->tetrominos.erase(this->currentMino);
   }
@@ -229,72 +233,49 @@ Tetromino2D* Game::spawnTetromino(int x, int y) {
 }
 
 CollisionType Game::collisionTester(Tetromino& targetMino, int simulateX, int simulateY, Tetromino* excludeMino) {
-  bool targetMinoArea[BOARD_WIDTH][BOARD_HEIGHT] = { { false, }, };
+  bool targetMinoArea[BOARD_HEIGHT][BOARD_WIDTH] = { { false, }, };
 
-  for (int y = 0; y < targetMino.size(); ++y) {
-    for (int x = 0; x < targetMino.size(); ++x) {
-      if (targetMino.check(x, y)) {
+  for (int x = 0; x < targetMino.size(); ++x) {
+    for (int y = 0; y < targetMino.size(); ++y) {
+      if (targetMino.check(y, x)) {
         int absX = simulateX + x;
         int absY = simulateY + y;
 
-        if (absX <= 0 || absX > BOARD_WIDTH - 2) {
-          console::log(std::to_string(absX) + ", " + std::to_string(absY) + " OUT_OF_BOARD_X");
+        if (absX < 1 || absX >= BOARD_WIDTH) {
           return CollisionType::OUT_OF_BOARD_X;
         }
 
-        if (absY > BOARD_HEIGHT) {
-          console::log(std::to_string(absX) + ", " + std::to_string(absY) + " OUT_OF_BOARD_Y");
+        if (absY >= BOARD_HEIGHT) {
           return CollisionType::OUT_OF_BOARD_Y;
+        }
+
+        targetMinoArea[absY][absX] = true;
+      }
+    }
+  }
+
+  for (Tetromino2D* item : this->tetrominos) {
+    Tetromino& itemMino = item->mino;
+
+    if ((&itemMino) == (&targetMino) || (&itemMino) == (excludeMino)) {
+      continue;
+    }
+
+    for (int x = 0; x < itemMino.size(); ++x) {
+      for (int y = 0; y < itemMino.size(); ++y) {
+        if (itemMino.check(y, x)) {
+          int absX = x + item->x;
+          int absY = y + item->y;
+          
+          if (targetMinoArea[absY][absX] == true) {
+            return CollisionType::CONFLICT_BLOCK;
+          }
         }
       }
     }
   }
 
   return CollisionType::NONE;
-
-  // bool targetMinoArea[BOARD_WIDTH][BOARD_HEIGHT] = { { false, }, };
-  // for (int y = 0; y < targetMino.size(); ++y) {
-  //   for (int x = 0; x < targetMino.size(); ++x) {
-  //     if (targetMino.check(x, y)) {
-  //       int absoluteX = x + simulateX;
-  //       int absoluteY = y + simulateY;
-
-  //       if (absoluteX >= (BOARD_WIDTH - 1) || absoluteX <= 0) {
-  //         return CollisionType::OUT_OF_BOARD_X;
-  //       }
-
-  //       if (absoluteY >= BOARD_HEIGHT) {
-  //         return CollisionType::OUT_OF_BOARD_Y;
-  //       }
-
-  //       targetMinoArea[absoluteX][absoluteY] = true;
-  //       console::log(std::to_string(absoluteX) + ", " + std::to_string(absoluteY));
-  //     }
-  //   }
-  // }
-
-  // for (Tetromino2D* item : this->tetrominos) {
-  //   Tetromino& itemMino = item->mino;
-
-  //   if ((&itemMino) == (&targetMino) || (&itemMino) == (excludeMino)) {
-  //     continue;
-  //   }
-
-  //   for(int y = 0; y < itemMino.size(); ++y) {
-  //     for(int x = 0; x < itemMino.size(); ++x) {
-  //       if (itemMino.check(x, y)) {
-  //         int absoluteX = x + item->x;
-  //         int absoluteY = y + item->y;
-
-  //         if (targetMinoArea[absoluteX][absoluteY] == true) {
-  //           return CollisionType::CONFLICT_BLOCK;
-  //         }
-  //       }
-  //     }
-  //   }
-  // }
-
-  // return CollisionType::NONE;
 }
 
 int Game::findRemainingDownwardDistance(

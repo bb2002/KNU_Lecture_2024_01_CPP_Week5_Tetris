@@ -7,7 +7,8 @@
       "args": [
         "-fdiagnostics-color=always",
         "-g",
-        "${file}",
+        "${workspaceFolder}/*.cpp", // 모든 .cpp 파일을 컴파일하도록 수정
+        "${workspaceFolder}/console/console.cpp", // console.cpp 파일의 경로 수정
         "-o",
         "${fileDirname}\\${fileBasenameNoExtension}.exe"
       ],
