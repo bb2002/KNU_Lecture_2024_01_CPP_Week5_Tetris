@@ -16,6 +16,7 @@ void Game::update() {
   ++tick;
   this->inputListener();
   this->moveTetromino(tick);
+  this->detectListCompleted();
 
   if (tick == 1 || tick % DROP_DELAY == 0) {
     this->updateSlowly();
@@ -140,7 +141,7 @@ void Game::moveTetromino(int tick) {
       // 스파게티 코드의 최후
       // 이 주석을 보실지 모르겠으나, 회전한 도형을 current->mino에 할당하는 순간
       // original 까지 돌아간 데이터로 덮어씌워지는 기히한 현상으로 인해
-      // (아마) copy  관련 문제 같음
+      // (아마 copy  관련 문제 같습니다)
       // 이를 피하고자 돌릴때마다 새로운 테트리미노를 생성해서...
       // 이런 이상한 코드가 나왔다고 합니다.
       // 비록 메모리를 조금 쓰지만 잘 동작합니다
@@ -321,6 +322,118 @@ int Game::findRemainingDownwardDistance(
   }
 
   return y;
+}
+
+int Game::detectListCompleted() {
+  for (Tetromino2D* mino : this->tetrominos) {
+    Tetromino* tetromino = mino->mino;
+
+    if (mino == this->currentMino) {
+      // 아직 내려가지 않은 테트리미노는 스킵
+      continue;
+    }
+
+    for (int x = 0; x < tetromino->size(); ++x) {
+      for (int y = 0; y < tetromino->size(); ++y) {
+        if (tetromino->check(y, x)) {
+          int absX = x + mino->x;
+          int absY = y + mino->y;
+          this->board_[absY][absX] = true;
+        }
+      }
+    }
+  }
+
+  for (int i = 0; i < BOARD_HEIGHT; ++i) {
+    bool isFull = false;
+    for (int j = 1; j < BOARD_WIDTH; ++j) {
+      isFull = this->board_[i][j];
+      if (!isFull) {
+        break;
+      }
+    }
+
+    if (isFull) {
+      this->removeLineAndGetPoint(i);
+    }
+  }
+}
+
+void Game::removeLineAndGetPoint(int line) {
+  std::vector<Tetromino2D*> targetMinos;
+
+  for (Tetromino2D* mino : this->tetrominos) {
+    Tetromino* tetromino = mino->mino;
+    const int sz = tetromino->size();
+
+    // 삭제 될 라인에 해당하는 테트리미노 찾기
+    for (int x = 0; x < tetromino->size(); ++x) {
+      for (int y = 0; y < tetromino->size(); ++y) {
+        if (tetromino->check(y, x)) {
+          int absY = y + mino->y;
+
+          if (absY == line) {
+            bool insert = true;
+            for (int i = 0; i < targetMinos.size(); ++i) {
+              if (targetMinos[i] == mino) {
+                insert = false;
+                break;
+              }
+            }
+            if (insert) {
+              targetMinos.push_back(mino);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  for (Tetromino2D* mino : targetMinos) {
+    Tetromino* tetromino = mino->mino;
+
+    // shape 에 직접 접근이 안되니 check() 하여 리버스
+    std::vector<std::vector<bool>> reversedShape(
+      tetromino->size(),
+      std::vector<bool>(tetromino->size(), false)
+    );
+
+    for (int x = 0; x < tetromino->size(); ++x) {
+      for (int y = 0; y < tetromino->size(); ++y) {
+        if (tetromino->check(y, x)) {
+          int absY = y + mino->y;
+
+          if (absY != line) {
+            // 삭제 라인이 아닌 부분을 shape로 재생성
+            reversedShape[y][x] = true;
+          }
+        }
+      }
+    }
+
+    // 빈 라인 삭제
+    
+
+    // 문자열로 직렬화
+    std::string serialized = "";
+    for (int y = 0; y < tetromino->size(); ++y) {
+      for (int x = 0; x < tetromino->size(); ++x) {
+        serialized += reversedShape[y][x] ? "O" : "X";
+      }
+    }
+
+    Tetromino* removedShape = new Tetromino(
+      tetromino->name(),
+      tetromino->size(),
+      serialized
+    );
+
+    // 기존 테트리미노 삭제
+    delete mino->mino;
+
+    // 렌더 배열에 반영
+    mino->mino = removedShape;
+  }
 }
 
 bool Game::shouldExit() {

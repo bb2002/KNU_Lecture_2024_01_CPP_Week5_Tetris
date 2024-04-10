@@ -3,9 +3,11 @@
 #define GAME_H
 
 #include <vector>
+#include <array>
 #include <string>
 #include <ctime>
 #include <cmath>
+#include <algorithm>
 #include "tetromino.h"
 #include "utils.h"
 #include "console/console.h"
@@ -20,7 +22,7 @@ class Game {
 private:
   // 게임 판을 나타내는 배열
   // board[x][y]가 true 인 경우 x, y 위치에 고정된 블록이 존재하는 것을 의미한다
-  bool board_[BOARD_WIDTH][BOARD_HEIGHT];
+  bool board_[BOARD_HEIGHT][BOARD_WIDTH] = { {false,}, };
 
   // 프레임레이트 계산을 위한 Tick
   int tick = 0;
@@ -85,6 +87,12 @@ private:
     int simulateX, 
     int simulateY
   );
+
+  // (추가) 한 줄이 다 완성되었는지 감지
+  int detectListCompleted();
+
+  // (추가) 해당 라인을 비우고 점수 증가
+  void removeLineAndGetPoint(int line);
 
   // (추가) DROP_DELAY에 한번씩 호출된다.
   void updateSlowly();
