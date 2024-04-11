@@ -10,7 +10,7 @@
 #include "tetromino.h"
 
 const Tetromino DECLARED_TETROMINOS[] = {
-  Tetromino("I", 4, "XXXXOOOOXXXXXXXX"),
+  Tetromino("I", 4, "XXXXOOOOXXXXXXXXX"),
   Tetromino("O", 2, "OOOO"),
   Tetromino("T", 3, "XOXOOOXXX"),
   Tetromino("S", 3, "XOOOOXXXX"),

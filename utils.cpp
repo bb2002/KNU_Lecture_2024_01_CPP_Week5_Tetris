@@ -2,5 +2,6 @@
 #include <cstdlib>
 
 int getRandomTetrominoIndex() {
-  return rand() % 7;
+  //return rand() % 7;
+  return 0;
 }

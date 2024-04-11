@@ -22,7 +22,7 @@ class Game {
 private:
   // 게임 판을 나타내는 배열
   // board[x][y]가 true 인 경우 x, y 위치에 고정된 블록이 존재하는 것을 의미한다
-  bool board_[BOARD_HEIGHT][BOARD_WIDTH] = { {false,}, };
+  // bool board_[BOARD_HEIGHT][BOARD_WIDTH] = { {false,}, };
 
   // 프레임레이트 계산을 위한 Tick
   int tick = 0;

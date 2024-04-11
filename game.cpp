@@ -14,9 +14,14 @@ Game::Game() {
 
 void Game::update() {
   ++tick;
+
+  int completedLine = this->detectListCompleted();
+  if (completedLine != -1) {
+    this->removeLineAndGetPoint(completedLine);
+  } 
+
   this->inputListener();
   this->moveTetromino(tick);
-  this->detectListCompleted();
 
   if (tick == 1 || tick % DROP_DELAY == 0) {
     this->updateSlowly();
@@ -325,6 +330,8 @@ int Game::findRemainingDownwardDistance(
 }
 
 int Game::detectListCompleted() {
+  bool currentBoard[BOARD_HEIGHT][BOARD_WIDTH] = { {false,}, };
+  
   for (Tetromino2D* mino : this->tetrominos) {
     Tetromino* tetromino = mino->mino;
 
@@ -338,7 +345,7 @@ int Game::detectListCompleted() {
         if (tetromino->check(y, x)) {
           int absX = x + mino->x;
           int absY = y + mino->y;
-          this->board_[absY][absX] = true;
+          currentBoard[absY][absX] = true;
         }
       }
     }
@@ -347,16 +354,18 @@ int Game::detectListCompleted() {
   for (int i = 0; i < BOARD_HEIGHT; ++i) {
     bool isFull = false;
     for (int j = 1; j < BOARD_WIDTH; ++j) {
-      isFull = this->board_[i][j];
+      isFull = currentBoard[i][j];
       if (!isFull) {
         break;
       }
     }
 
     if (isFull) {
-      this->removeLineAndGetPoint(i);
+      return i;
     }
   }
+
+  return -1;
 }
 
 void Game::removeLineAndGetPoint(int line) {
@@ -398,31 +407,40 @@ void Game::removeLineAndGetPoint(int line) {
       std::vector<bool>(tetromino->size(), false)
     );
 
+    std::vector<std::vector<bool>> lineRemovedShape(
+      tetromino->size(),
+      std::vector<bool>(tetromino->size(), false)
+    );
+
     for (int x = 0; x < tetromino->size(); ++x) {
       for (int y = 0; y < tetromino->size(); ++y) {
-        if (tetromino->check(y, x)) {
-          int absY = y + mino->y;
+        reversedShape[x][y] = tetromino->check(x, y);
+      }
+    }
 
-          if (absY != line) {
-            // 삭제 라인이 아닌 부분을 shape로 재생성
-            reversedShape[y][x] = true;
+    for (int y = 0; y < reversedShape.size(); ++y) {
+      for (int x = 0; x < reversedShape.size(); ++x) {
+        int absY = y + mino->y;
+        if (absY != line) {
+          if (absY < line) {
+            lineRemovedShape[y + 1][x] = reversedShape[y][x];
+          } else {
+            lineRemovedShape[y][x] = reversedShape[y][x];
           }
         }
       }
     }
-
-    // 빈 라인 삭제
     
 
     // 문자열로 직렬화
     std::string serialized = "";
-    for (int y = 0; y < tetromino->size(); ++y) {
-      for (int x = 0; x < tetromino->size(); ++x) {
-        serialized += reversedShape[y][x] ? "O" : "X";
+    for (int y = 0; y < reversedShape.size(); ++y) {
+      for (int x = 0; x < reversedShape.size(); ++x) {
+        serialized += lineRemovedShape[y][x] ? "O" : "X";
       }
     }
 
-    Tetromino* removedShape = new Tetromino(
+    Tetromino* resultShape = new Tetromino(
       tetromino->name(),
       tetromino->size(),
       serialized
@@ -432,7 +450,21 @@ void Game::removeLineAndGetPoint(int line) {
     delete mino->mino;
 
     // 렌더 배열에 반영
-    mino->mino = removedShape;
+    mino->mino = resultShape;
+  }
+  
+  // targetMinos 가 아닌 애들은 절대 좌표를 하나씩 내리기
+  for (Tetromino2D* tetromino : this->tetrominos) {
+    bool find = false;
+    for (Tetromino2D* targetMino : targetMinos) {
+      if (targetMino == tetromino) {
+        find = true;
+      }
+    }
+
+    if (!find && tetromino->y < line) {
+      tetromino->y++;
+    }
   }
 }
 
