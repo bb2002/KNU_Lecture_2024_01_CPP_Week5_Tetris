@@ -8,13 +8,14 @@
 #include <ctime>
 #include <cmath>
 #include <algorithm>
+#include <ctime>
 #include "tetromino.h"
 #include "utils.h"
 #include "console/console.h"
 
 #define BOARD_WIDTH 10
 #define BOARD_HEIGHT 20
-#define LINES 40
+#define LINES 1
 
 #define DROP_DELAY 60
 
@@ -22,7 +23,7 @@ class Game {
 private:
   // 게임 판을 나타내는 배열
   // board[x][y]가 true 인 경우 x, y 위치에 고정된 블록이 존재하는 것을 의미한다
-  // bool board_[BOARD_HEIGHT][BOARD_WIDTH] = { {false,}, };
+  bool board_[BOARD_HEIGHT][BOARD_WIDTH] = { {false,}, };
 
   // 프레임레이트 계산을 위한 Tick
   int tick = 0;
@@ -44,6 +45,18 @@ private:
 
   // 홀드를 사용 할 수 있는가?
   bool canUseHold = true;
+
+  // 현재 게임 상태
+  GameStatus status = GameStatus::PLAYING;
+
+  // 현재 점수
+  int score = 0;
+
+  // 게임 시작 시간
+  clock_t startAt = clock();
+
+  // 현재 플레이한 시간
+  clock_t playTime = clock();
 
 public:
   // 게임의 한 프레임을 처리한다.

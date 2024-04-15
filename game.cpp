@@ -1,35 +1,47 @@
 #include "game.h"
 
 Game::Game() {
-  srand(1); 
-  this->currentMino = this->spawnTetromino(1,1);
+  srand(time(NULL) + 1);
+  this->currentMino = this->spawnTetromino(5,3);
   this->tetrominos.push_back(this->currentMino);
 
   // 다음 테트리미노와 현재 테트리미노를 동시에 초기화하면 
   // 렌덤이 같은 값을 반환할 확률이 커져서
   // 시드를 다르게 준다.
   srand(time(NULL));
-  this->nextMino = this->spawnTetromino(13, 1);
+  this->nextMino = this->spawnTetromino(13, 2);
 }
 
 void Game::update() {
   ++tick;
+  if (this->status == GameStatus::PLAYING) {
+    this->playTime = clock() - this->startAt;
 
-  int completedLine = this->detectListCompleted();
-  if (completedLine != -1) {
-    this->removeLineAndGetPoint(completedLine);
-  } 
+    if (this->nextMino == NULL) {
+      this->nextMino = this->spawnTetromino(13, 2);
+    }
 
-  this->inputListener();
-  this->moveTetromino(tick);
+    int completedLine = this->detectListCompleted();
+    if (completedLine != -1) {
+      this->removeLineAndGetPoint(completedLine);
+    } 
 
-  if (this->nextMino == NULL) {
-    this->nextMino = this->spawnTetromino(13, 1);
+    if (this->score >= LINES) {
+      this->status = GameStatus::WIN;
+      return;
+    }
+
+    this->inputListener();
+    this->moveTetromino(tick);
+
+    if (tick == 1 || tick % DROP_DELAY == 0) {
+      this->updateSlowly();
+      return;
+    }
   }
 
-  if (tick == 1 || tick % DROP_DELAY == 0) {
-    this->updateSlowly();
-    return;
+  if (this->status == GameStatus::EXIT) {
+    exit(0);
   }
 }
 
@@ -39,31 +51,57 @@ void Game::updateSlowly() {
     this->nextMino = NULL;
     this->currentMino->x = 5;
     this->currentMino->y = 1;
+
+    CollisionType collision = this->collisionTester(
+      *this->currentMino->mino, 
+      this->currentMino->x, 
+      this->currentMino->y);
+
+    if (collision == CollisionType::CONFLICT_BLOCK) {
+      // 스폰하자마자 충돌한 경우
+      status = GameStatus::LOSE;
+      return;
+    }
+
     this->tetrominos.push_back(this->currentMino);
   }
 }
 
 void Game::draw() {
-  this->drawUI();
   this->drawTetrominos();
+  this->drawUI();
 }
 
 void Game::drawUI() {
   // 화면 생성
-  console::drawBox(0, 0, TETRIS_WIDTH,TETRIS_HEIGHT);
+  console::drawBox(0, 0, BOARD_WIDTH + 1,BOARD_HEIGHT + 1);
   
   // Next 상자 생성
-  console::drawBox(11, 0, 11 + TETRIS_UI_WIDTH, TETRIS_UI_HEIGHT);
-  console::draw(12, 0, "Next");
+  console::drawBox(12, 0, 12 + TETRIS_UI_WIDTH, TETRIS_UI_HEIGHT);
+  console::draw(13, 0, "Next");
 
   // Hold 상자 생성
   console::drawBox(18, 0, 18 + TETRIS_UI_WIDTH, TETRIS_UI_HEIGHT);
   console::draw(19, 0, "Hold");
+
+  // 게임 진행상황 표시기
+  console::draw(0, BOARD_HEIGHT + 2, std::to_string(LINES - this->score) + " lines left");
+  console::draw(2, BOARD_HEIGHT + 3, timeFormat(this->playTime));
+
+  // 승리/패배 표시
+  if (this->status == GameStatus::WIN) {
+    console::draw(3, 9, "You Win");
+    console::draw(2, 10, timeFormat(this->playTime));
+  }
+  
+  if (this->status == GameStatus::LOSE) {
+    console::draw(2, 9, "You Lost");
+  }
 }
 
 void Game::drawTetrominos() {
   if (this->nextMino != NULL) {
-    this->nextMino->mino->drawAt(BLOCK_STRING, 13, 1);
+    this->nextMino->mino->drawAt(BLOCK_STRING, this->nextMino->x, this->nextMino->y);
   }
 
   if (this->currentMino != NULL) {
@@ -81,7 +119,7 @@ void Game::drawTetrominos() {
   if (this->holdMino != NULL) {
     this->holdMino->mino->drawAt(
       BLOCK_STRING,
-      20, 1
+      20, 2
     );
   }
 
@@ -114,6 +152,11 @@ void Game::inputListener() {
 }
 
 void Game::moveTetromino(int tick) {
+  if (this->pressedKey == console::Key::K_ESC) {
+    this->status = GameStatus::EXIT;
+    return;
+  }
+
   if (this->currentMino == NULL) {
     // 움직일 테트리미노가 없는 경우
     return;
@@ -271,7 +314,7 @@ Tetromino2D* Game::spawnTetromino(int x, int y) {
 }
 
 CollisionType Game::collisionTester(Tetromino& targetMino, int simulateX, int simulateY, Tetromino* excludeMino) {
-  bool targetMinoArea[BOARD_HEIGHT][BOARD_WIDTH] = { { false, }, };
+  bool targetMinoArea[BOARD_HEIGHT + 1][BOARD_WIDTH + 1] = { { false, }, };
 
   for (int x = 0; x < targetMino.size(); ++x) {
     for (int y = 0; y < targetMino.size(); ++y) {
@@ -279,11 +322,11 @@ CollisionType Game::collisionTester(Tetromino& targetMino, int simulateX, int si
         int absX = simulateX + x;
         int absY = simulateY + y;
 
-        if (absX < 1 || absX >= BOARD_WIDTH) {
+        if (absX < 1 || absX >= (BOARD_WIDTH+1)) {
           return CollisionType::OUT_OF_BOARD_X;
         }
 
-        if (absY >= BOARD_HEIGHT) {
+        if (absY >= (BOARD_HEIGHT+1)) {
           return CollisionType::OUT_OF_BOARD_Y;
         }
 
@@ -330,7 +373,7 @@ int Game::findRemainingDownwardDistance(
 }
 
 int Game::detectListCompleted() {
-  bool currentBoard[BOARD_HEIGHT][BOARD_WIDTH] = { {false,}, };
+  bool currentBoard[BOARD_HEIGHT + 1][BOARD_WIDTH + 1] = { {false,}, };
   
   for (Tetromino2D* mino : this->tetrominos) {
     Tetromino* tetromino = mino->mino;
@@ -351,9 +394,9 @@ int Game::detectListCompleted() {
     }
   }
 
-  for (int i = 0; i < BOARD_HEIGHT; ++i) {
+  for (int i = 0; i < BOARD_HEIGHT + 1; ++i) {
     bool isFull = false;
-    for (int j = 1; j < BOARD_WIDTH; ++j) {
+    for (int j = 1; j < BOARD_WIDTH + 1; ++j) {
       isFull = currentBoard[i][j];
       if (!isFull) {
         break;
@@ -462,10 +505,26 @@ void Game::removeLineAndGetPoint(int line) {
       }
     }
 
-    if (!find && tetromino->y < line) {
-      tetromino->y++;
+    if (!find) {
+      Tetromino* mino = tetromino->mino;
+      int floor = 0;
+
+      for (int y = 0; y < mino->size(); ++y) {
+        for (int x = 0; x < mino->size(); ++x) {
+          int absY = y + tetromino->y;
+          if (floor < absY) {
+            floor = absY;
+          }
+        }
+      }
+
+      if (floor < line) {
+        tetromino->y++;
+      }
     }
   }
+
+  this->score++;
 }
 
 bool Game::shouldExit() {
