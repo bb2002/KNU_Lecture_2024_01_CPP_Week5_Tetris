@@ -23,6 +23,10 @@ void Game::update() {
   this->inputListener();
   this->moveTetromino(tick);
 
+  if (this->nextMino == NULL) {
+    this->nextMino = this->spawnTetromino(13, 1);
+  }
+
   if (tick == 1 || tick % DROP_DELAY == 0) {
     this->updateSlowly();
     return;
@@ -30,10 +34,6 @@ void Game::update() {
 }
 
 void Game::updateSlowly() {
-  if (this->nextMino == NULL) {
-    this->nextMino = this->spawnTetromino(13, 1);
-  }
-
   if (this->currentMino == NULL) {
     this->currentMino = this->nextMino;
     this->nextMino = NULL;
