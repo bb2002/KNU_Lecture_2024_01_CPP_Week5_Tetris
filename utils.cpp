@@ -1,8 +1,12 @@
 #include "utils.h"
 #include <cstdlib>
 
+int idx = 0;
+
 int getRandomTetrominoIndex() {
-  return rand() % 7;
+  // return rand() % 7;
+  int arr[] = { 6, 3, 4, 1, 5, 2, 1, 6, 0,0,0,0,0 };
+  return arr[idx++];
 }
 
 std::string timeFormat(clock_t playTime) {

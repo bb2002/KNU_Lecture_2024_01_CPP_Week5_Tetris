@@ -511,9 +511,11 @@ void Game::removeLineAndGetPoint(int line) {
 
       for (int y = 0; y < mino->size(); ++y) {
         for (int x = 0; x < mino->size(); ++x) {
-          int absY = y + tetromino->y;
-          if (floor < absY) {
-            floor = absY;
+          if (mino->check(y, x)) {
+            int absY = y + tetromino->y;
+            if (floor < absY) {
+              floor = absY;
+            }
           }
         }
       }

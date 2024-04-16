@@ -15,7 +15,7 @@
 
 #define BOARD_WIDTH 10
 #define BOARD_HEIGHT 20
-#define LINES 1
+#define LINES 10
 
 #define DROP_DELAY 60
 
