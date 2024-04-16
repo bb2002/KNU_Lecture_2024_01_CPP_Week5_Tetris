@@ -2,7 +2,7 @@
 
 Game::Game() {
   srand(time(NULL) + 1);
-  this->currentMino = this->spawnTetromino(5,3);
+  this->currentMino = this->spawnTetromino(5,1);
   this->tetrominos.push_back(this->currentMino);
 
   // 다음 테트리미노와 현재 테트리미노를 동시에 초기화하면 
@@ -119,7 +119,7 @@ void Game::drawTetrominos() {
   if (this->holdMino != NULL) {
     this->holdMino->mino->drawAt(
       BLOCK_STRING,
-      20, 2
+      19, 2
     );
   }
 
@@ -164,7 +164,6 @@ void Game::moveTetromino(int tick) {
 
   int x = 0;
   int y = 0;
-  int speed = 1;
   if (this->pressedKey == console::Key::K_LEFT) {
     x = -1;
   }
@@ -205,12 +204,12 @@ void Game::moveTetromino(int tick) {
       this->currentMino = this->nextMino;
       this->nextMino = NULL;
       this->currentMino->x = this->holdMino->x;
-      this->currentMino->y = this->holdMino->y;
+      this->currentMino->y = 1;
     } else {
       Tetromino2D* tmp = this->currentMino;
       this->currentMino = this->holdMino;
       this->currentMino->x = tmp->x;
-      this->currentMino->y = tmp->y;
+      this->currentMino->y = 1;
       this->holdMino = tmp;
       
       Tetromino* before = this->holdMino->mino->original();
@@ -221,6 +220,16 @@ void Game::moveTetromino(int tick) {
         }
 
         before = before->original();
+      }
+    }
+
+    CollisionType collisionType = this->collisionTester(*this->currentMino->mino, this->currentMino->x, this->currentMino->y);
+    if (collisionType == CollisionType::OUT_OF_BOARD_X) {
+      // 도형 크기가 달라 발생하는 문제, 한칸씩 이동 조치한다
+      if (this->currentMino->x < BOARD_WIDTH / 2) {
+        this->currentMino->x += 2;
+      } else {
+        this->currentMino->x -= 2;
       }
     }
 
@@ -273,11 +282,7 @@ void Game::moveTetromino(int tick) {
       }
     }
 
-    if (this->pressedKey == console::Key::K_DOWN) {
-      speed = 10;
-    }
-
-    if ((tick % (int)std::round(DROP_DELAY / speed)) == 0) {
+    if (tick % DROP_DELAY == 0 || this->pressedKey == console::Key::K_DOWN) {
       y = 1;
     }
 
