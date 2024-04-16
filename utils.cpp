@@ -4,9 +4,7 @@
 int idx = 0;
 
 int getRandomTetrominoIndex() {
-  // return rand() % 7;
-  int arr[] = { 6, 3, 4, 1, 5, 2, 1, 6, 0,0,0,0,0 };
-  return arr[idx++];
+  return rand() % 7;
 }
 
 std::string timeFormat(clock_t playTime) {
