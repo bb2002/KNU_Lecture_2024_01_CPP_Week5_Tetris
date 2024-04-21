@@ -11,13 +11,13 @@
 #include "tetromino.h"
 
 const Tetromino DECLARED_TETROMINOS[] = {
-  Tetromino("I", 4, "XXXXOOOOXXXXXXXXX"),
-  Tetromino("O", 2, "OOOO"),
-  Tetromino("T", 3, "XOXOOOXXX"),
-  Tetromino("S", 3, "XOOOOXXXX"),
-  Tetromino("Z", 3, "OOXXOOXXX"),
-  Tetromino("J", 3, "OXXOOOXXX"),
-  Tetromino("L", 3, "XXOOOOXXX"),
+  Tetromino::I,
+  Tetromino::O,
+  Tetromino::S,
+  Tetromino::T,
+  Tetromino::J,
+  Tetromino::L,
+  Tetromino::Z,
 };
 
 int getRandomTetrominoIndex();

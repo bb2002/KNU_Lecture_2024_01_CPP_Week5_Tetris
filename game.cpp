@@ -335,7 +335,7 @@ CollisionType Game::collisionTester(Tetromino& targetMino, int simulateX, int si
           return CollisionType::OUT_OF_BOARD_Y;
         }
 
-        targetMinoArea[absY][absX] = true;
+        this->board_[absX-1][absY-1] = targetMinoArea[absY][absX] = true;
       }
     }
   }
